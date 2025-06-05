@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Generative Pattern Playground</title>
+  <style>
+body {
+  font-family: 'Courier New', monospace;
+  margin: 2rem;
+  background-color: #111;
+  color: #0ff;
+}
+
+h1 {
+  font-size: 3rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  text-shadow: 2px 2px 0 #f0f;
+  margin-bottom: 1rem;
+}
+
+canvas {
+  border: 2px dashed #0ff;
+  display: block;
+  margin-top: 1rem;
+  //background-color: #000;
+}
+
+button {
+  margin-top: 1rem;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: bold;
+  background-color: rgb(0, 26, 255);
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  cursor: pointer;
+  box-shadow: 2px 2px 0 #0ff;
+  transition: transform 0.1s ease;
+}
+
+button:hover {
+  transform: scale(1.05);
+}
+  .tp-dfwv {
+    font-size: 1rem !important;
+    width: 320px !important;
+  }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/tweakpane@3.1.8/dist/tweakpane.min.js"></script>
+</head>
+<body>
+  <h1>Pattern Playground</h1>
+  <canvas id="radialCanvas"></canvas>
+  <button id="saveBtn">Save as PNG</button>
+
+  <script>
+    const canvas = document.getElementById('radialCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const patternA = {
+      pattern: 'radial',
+      numberOfLines: 127,
+      radius: 270,
+      xOffset: 0,
+      colour: '#47e8ff'
+    };
+
+    const patternB = {
+      pattern: 'circles',
+      numberOfLines: 20,
+      radius: 335,
+      xOffset: 0,
+      colour: '#ec8fcf'
+    };
+
+    const globalParams = {
+      canvasSize: 590,
+      animate: true
+    };
+
+    let animationFrame;
+    let time = 0;
+
+    function drawPattern(params, time = 0) {
+      ctx.save();
+      ctx.translate(canvas.width / 2 + params.xOffset, canvas.height / 2);
+      ctx.strokeStyle = params.colour;
+
+      if (params.pattern === 'radial') {
+        for (let i = 0; i < params.numberOfLines; i++) {
+          const angle = (i / params.numberOfLines) * Math.PI * 2 + time * 0.2;
+          const x = Math.cos(angle) * params.radius;
+          const y = Math.sin(angle) * params.radius;
+          ctx.beginPath();
+          ctx.moveTo(0, 0);
+          ctx.lineTo(x, y);
+          ctx.stroke();
+        }
+      } else if (params.pattern === 'spiral') {
+        ctx.beginPath();
+        const turns = 5;
+        const points = params.numberOfLines * 10;
+        for (let i = 0; i < points; i++) {
+          const t = i / points * Math.PI * 2 * turns + time * 0.5;
+          const r = params.radius * (i / points);
+          const x = Math.cos(t) * r;
+          const y = Math.sin(t) * r;
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      } else if (params.pattern === 'circles') {
+        const rings = params.numberOfLines;
+        const step = params.radius / rings;
+        for (let i = 1; i <= rings; i++) {
+          const r = i * step + Math.sin(time + i) * 2;
+          ctx.beginPath();
+          ctx.arc(0, 0, r, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+      } else if (params.pattern === 'grid') {
+        const cols = Math.floor(Math.sqrt(params.numberOfLines));
+        const rows = cols;
+        const spacing = globalParams.canvasSize / cols;
+        ctx.translate(-globalParams.canvasSize / 2, -globalParams.canvasSize / 2);
+        for (let y = 0; y < rows; y++) {
+          for (let x = 0; x < cols; x++) {
+            const offset = Math.sin((x + y) * 0.3 + time * 2) * 2;
+            ctx.beginPath();
+            ctx.rect(x * spacing + offset, y * spacing + offset, spacing, spacing);
+            ctx.stroke();
+          }
+        }
+      } else if (params.pattern === 'lissajous') {
+        ctx.beginPath();
+        const a = 3;
+        const b = 2;
+        const delta = time;
+        const points = params.numberOfLines * 10;
+        for (let t = 0; t <= Math.PI * 2; t += Math.PI * 2 / points) {
+          const x = params.radius * Math.sin(a * t + delta);
+          const y = params.radius * Math.sin(b * t);
+          if (t === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      } else if (params.pattern === 'starburst') {
+        const steps = params.numberOfLines;
+        for (let i = 0; i < steps; i++) {
+          if (i % 2 === 0) continue;
+          const angle = (i / steps) * Math.PI * 2 + time;
+          const r = i % 4 === 0 ? params.radius * 0.5 : params.radius;
+          const x = Math.cos(angle) * r;
+          const y = Math.sin(angle) * r;
+          ctx.beginPath();
+          ctx.moveTo(0, 0);
+          ctx.lineTo(x, y);
+          ctx.stroke();
+        }
+      } else if (params.pattern === 'sinewave') {
+        const rows = 20;
+        const cols = params.numberOfLines;
+        const spacing = globalParams.canvasSize / cols;
+        ctx.translate(-globalParams.canvasSize / 2, -globalParams.canvasSize / 2);
+        for (let y = 0; y < rows; y++) {
+          ctx.beginPath();
+          for (let x = 0; x < cols; x++) {
+            const xPos = x * spacing;
+            const yOffset = Math.sin(x * 0.3 + y * 0.5 + time * 2) * 10;
+            const yPos = y * spacing + yOffset;
+            if (x === 0) ctx.moveTo(xPos, yPos);
+            else ctx.lineTo(xPos, yPos);
+          }
+          ctx.stroke();
+        }
+      }
+
+      ctx.restore();
+    }
+
+    function draw(currentTime = 0) {
+      canvas.width = canvas.height = globalParams.canvasSize;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawPattern(patternA, currentTime);
+      drawPattern(patternB, currentTime);
+    }
+
+    function animate() {
+      if (!globalParams.animate) return;
+      time += 0.01;
+      draw(time);
+      animationFrame = requestAnimationFrame(animate);
+    }
+
+    function startAnimation() {
+      cancelAnimationFrame(animationFrame);
+      if (globalParams.animate) animate();
+      else draw();
+    }
+
+    function triggerRedraw() {
+      if (!globalParams.animate) draw();
+    }
+
+    const pane = new Tweakpane.Pane();
+
+    const globalFolder = pane.addFolder({ title: 'Global' });
+    globalFolder.addInput(globalParams, 'canvasSize', { min: 100, max: 800, step: 10 }).on('change', triggerRedraw);
+    globalFolder.addInput(globalParams, 'animate').on('change', startAnimation);
+
+    const patternOptions = {
+      'Radial Lines': 'radial',
+      'Spiral': 'spiral',
+      'Concentric Circles': 'circles',
+      'Grid': 'grid',
+      'Lissajous Curve': 'lissajous',
+      'Starburst': 'starburst',
+      'Sine Wave Field': 'sinewave'
+    };
+
+    const folderA = pane.addFolder({ title: 'Pattern A' });
+    folderA.addInput(patternA, 'pattern', { options: patternOptions }).on('change', startAnimation);
+    folderA.addInput(patternA, 'numberOfLines', { min: 3, max: 200, step: 1 }).on('change', startAnimation);
+    folderA.addInput(patternA, 'radius', { min: 10, max: 400, step: 5 }).on('change', startAnimation);
+    folderA.addInput(patternA, 'xOffset', { min: -200, max: 200, step: 1 }).on('change', startAnimation);
+    folderA.addInput(patternA, 'colour').on('change', triggerRedraw);
+
+    const folderB = pane.addFolder({ title: 'Pattern B' });
+    folderB.addInput(patternB, 'pattern', { options: patternOptions }).on('change', startAnimation);
+    folderB.addInput(patternB, 'numberOfLines', { min: 3, max: 200, step: 1 }).on('change', startAnimation);
+    folderB.addInput(patternB, 'radius', { min: 10, max: 400, step: 5 }).on('change', startAnimation);
+    folderB.addInput(patternB, 'xOffset', { min: -200, max: 200, step: 1 }).on('change', startAnimation);
+    folderB.addInput(patternB, 'colour').on('change', triggerRedraw);
+
+    document.getElementById('saveBtn').addEventListener('click', () => {
+      const link = document.createElement('a');
+      link.download = 'pattern.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    });
+
+    startAnimation();
+  </script>
+</body>
+</html>
